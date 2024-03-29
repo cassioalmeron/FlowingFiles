@@ -1,13 +1,20 @@
-﻿namespace FlowingFiles.MVVM
+﻿using System.Windows.Input;
+
+namespace FlowingFiles.MVVM
 {
     public class FileViewModel : ViewModelBase
     {
+        public FileViewModel()
+        {
+            CleanFileNameCommand = new RelayCommand(CleanFileName, x => Status == FileStatusEnum.Filled);
+        }
+
         private string _fileName;
         public string FileName
         {
             get { return _fileName; }
-            set 
-            { 
+            set
+            {
                 SetProperty(ref _fileName, value, () => FileName);
                 OnPropertyChanged(() => Status);
             }
@@ -30,6 +37,13 @@
                     return FileStatusEnum.EmptyRequired;
                 return FileStatusEnum.EmptyNotRequided;
             }
+        }
+
+        public ICommand CleanFileNameCommand { get; private set; }
+
+        private void CleanFileName()
+        {
+            FileName = "";
         }
     }
 }

@@ -55,7 +55,13 @@
                                             <ColumnDefinition Width="100"/>
                                         </Grid.ColumnDefinitions>
 
-                                        <TextBox Text="{Binding FileName}" IsReadOnly="True" MaxWidth="340" />
+                                        <TextBox Text="{Binding FileName}" IsReadOnly="True" MaxWidth="340">
+                                            <TextBox.ContextMenu>
+                                                <ContextMenu>
+                                                    <MenuItem Header="Clean" Command="{Binding CleanFileNameCommand}" />
+                                                </ContextMenu>
+                                            </TextBox.ContextMenu>
+                                        </TextBox>
 
                                         <Button Content="Open File" Grid.Column="1">
                                             <i:Interaction.Behaviors>
