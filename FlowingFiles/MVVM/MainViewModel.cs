@@ -30,6 +30,9 @@ namespace FlowingFiles.MVVM
                 new() { Description = "IRPJ - Boleto", Path = @"Contabil\Pagamentos\IRPJ - Boleto" },
                 new() { Description = "IRPJ - Comprovante", Path = @"Contabil\Pagamentos\IRPJ - Comprovante" },
 
+                //new() { Description = "Alvará Funcionamento - Boleto", Path = @"Contabil\Pagamentos\Alvará Funcionamento - Boleto", Required = true },
+                //new() { Description = "Alvará Funcionamento - Comprovante", Path = @"Contabil\Pagamentos\Alvará Funcionamento - Comprovante", Required = true },
+
                 // Fiscal
                 new()  { Description = "NFSE - XML", Path = @"Fiscal\Notas Fiscais Emitidas\NFSE", Required = true },
                 new()  { Description = "NFSE - PDF", Path = @"Fiscal\Notas Fiscais Emitidas\NFSE", Required = true },
@@ -40,6 +43,7 @@ namespace FlowingFiles.MVVM
 
                 // Root
                 new()  { Description = "Extrato", Path = @"Extrato", Required = true },
+                new()  { Description = "Movimentações (OFX)", Path = @"Movimentacoes", Required = true },
                 new()  { Description = "Relatório", Path = @"Relatorio", Required = true }
             };
 
