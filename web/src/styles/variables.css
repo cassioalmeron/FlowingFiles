@@ -1,0 +1,26 @@
+:root {
+  --fg-primary: #F0F0F0;
+  --fg-secondary: #DCDCDC;
+  --fg-disabled: #BEBEBE;
+
+  --bg-1: #141414;
+  --bg-2: #181818;
+  --bg-3: #1D1D1D;
+  --bg-4: #202020;
+  --bg-5: #252525;
+  --bg-6: #2D2D2D;
+  --bg-7: #383838;
+  --bg-8: #505050;
+
+  --accent-1: #5587AF;
+  --accent-2: #3494E1;
+  --accent-3: #2D7DD7;
+
+  --status-filled: #22c55e;
+  --status-required: #ef4444;
+  --status-optional: #f97316;
+
+  --radius: 8px;
+  --radius-sm: 4px;
+  --radius-lg: 12px;
+}

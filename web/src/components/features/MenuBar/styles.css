@@ -1,0 +1,41 @@
+.menubar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 44px;
+  background-color: var(--bg-2);
+  border-bottom: 1px solid var(--bg-5);
+}
+
+.menubar__brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.menubar__title {
+  font-weight: 700;
+  font-size: 0.95rem;
+  color: var(--fg-primary);
+  letter-spacing: -0.01em;
+}
+
+.menubar__actions {
+  display: flex;
+  gap: 8px;
+}
+
+.menubar__btn {
+  background: none;
+  color: var(--fg-secondary);
+  padding: 4px 12px;
+  font-size: 0.8rem;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.15s ease, color 0.15s ease;
+}
+
+.menubar__btn:hover {
+  background-color: var(--bg-5);
+  color: var(--fg-primary);
+}

@@ -1,0 +1,67 @@
+.toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 20px;
+  background-color: var(--bg-3);
+  border-top: 1px solid var(--bg-5);
+}
+
+.toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toolbar__label {
+  font-size: 0.85rem;
+  color: var(--fg-secondary);
+  font-weight: 500;
+}
+
+.toolbar__select {
+  background-color: var(--bg-5);
+  color: var(--fg-primary);
+  border: 1px solid var(--bg-7);
+  border-radius: var(--radius-sm);
+  padding: 6px 12px;
+  font-size: 0.85rem;
+  outline: none;
+}
+
+.toolbar__select:focus {
+  border-color: var(--accent-2);
+}
+
+.toolbar__right {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.toolbar__status {
+  font-size: 0.8rem;
+  color: var(--fg-disabled);
+}
+
+.toolbar__export-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--accent-2);
+  color: white;
+  padding: 8px 20px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.85rem;
+  transition: background-color 0.15s ease;
+}
+
+.toolbar__export-btn:hover:not(:disabled) {
+  background-color: var(--accent-3);
+}
+
+.toolbar__export-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
