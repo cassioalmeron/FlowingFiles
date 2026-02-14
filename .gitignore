@@ -1,3 +1,6 @@
 /.vs
 /FlowingFiles/bin
 /FlowingFiles/obj
+.env
+.env.local
+.env.*.local
