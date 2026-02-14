@@ -1,6 +1,8 @@
 # FlowingFiles
 
-A Windows desktop application for organizing and managing monthly accounting and fiscal documents for Brazilian businesses. It streamlines the process of collecting required files and exporting them in a structured folder hierarchy for accountants and tax filing.
+An application for organizing and managing monthly accounting and fiscal documents for Brazilian businesses. It streamlines the process of collecting required files and exporting them in a structured folder hierarchy for accountants and tax filing.
+
+Available as a **Windows desktop app** (WPF) and a **web app** (React).
 
 ## Features
 
@@ -12,18 +14,86 @@ A Windows desktop application for organizing and managing monthly accounting and
   - Green = file attached
   - Red = required file missing
   - Orange = optional file missing
-- **File Preview** — Built-in WebView2 panel to preview selected documents
-- **Export Options** — Export collected files as an organized folder structure or a ZIP archive
+- **File Preview** — Preview selected documents (PDF, images, XML, OFX)
+- **Export as ZIP** — Download all collected files as a structured ZIP archive
 - **Month Selector** — Choose the reference month; exports are named accordingly (e.g., `Jan`, `Feb`)
-- **Dark Theme** — Ships with multiple theme options (DeepDark, SoftDark, RedBlack, Grey, DarkGrey, Light)
+- **Dark Theme** — DeepDark theme with steel-blue accents
 
-## Requirements
+---
+
+## Web App (React)
+
+A browser-based version that runs entirely on the client — no backend required. Files are held in memory and exported as a ZIP download.
+
+### Requirements
+
+- [Node.js](https://nodejs.org/) 18+
+
+### Getting Started
+
+```bash
+cd web
+npm install
+npm run dev
+```
+
+Open `http://localhost:5173` in your browser.
+
+### Build for Production
+
+```bash
+cd web
+npm run build
+```
+
+The output is in `web/dist/` and can be served from any static hosting.
+
+### Tech Stack
+
+- **React 18** with **TypeScript**
+- **Vite** as build tool
+- **CSS Modules** with CSS custom properties (DeepDark theme)
+- **JSZip** for client-side ZIP generation
+- **file-saver** for triggering downloads
+
+### Project Structure
+
+```
+web/src/
+├── components/
+│   ├── icons.tsx                       # SVG icon components
+│   └── features/
+│       ├── MenuBar/                    # Top bar with brand and export action
+│       ├── FileList/                   # Scrollable document list
+│       ├── FileListItem/              # Individual document row with status
+│       ├── FilePreview/               # Right panel (PDF, image, text preview)
+│       └── Toolbar/                   # Bottom bar with month selector and export
+├── hooks/
+│   └── useDocumentManager.ts          # Core state: files, selection, ZIP export
+├── data/
+│   └── documentOptions.ts            # 22 document definitions (from WPF app)
+├── types/
+│   └── index.ts                       # FileStatus, DocumentOption, FileEntry
+├── styles/
+│   ├── variables.css                  # DeepDark theme CSS custom properties
+│   └── globals.css                    # Reset and base styles
+├── App.tsx                            # Main two-column layout
+└── main.tsx                           # Entry point
+```
+
+---
+
+## Desktop App (WPF)
+
+The original Windows desktop application with native file dialogs and folder export.
+
+### Requirements
 
 - Windows 10 or later
 - [.NET 6.0 Desktop Runtime](https://dotnet.microsoft.com/download/dotnet/6.0)
 - [WebView2 Runtime](https://developer.microsoft.com/en-us/microsoft-edge/webview2/) (usually pre-installed on Windows 10+)
 
-## Build
+### Build
 
 ```bash
 dotnet build FlowingFiles/FlowingFiles.csproj
@@ -35,7 +105,7 @@ To publish a self-contained executable:
 dotnet publish FlowingFiles/FlowingFiles.csproj -c Release -r win-x64
 ```
 
-## Usage
+### Usage
 
 1. Launch the application.
 2. For each document in the list, click **Open File** to select the corresponding file from your system.
@@ -45,7 +115,14 @@ dotnet publish FlowingFiles/FlowingFiles.csproj -c Release -r win-x64
 
 Right-click a file entry and select **Clean** to clear a previously selected file.
 
-## Project Structure
+### Tech Stack
+
+- **C# / WPF** with MVVM architecture
+- **.NET 6.0** (Windows)
+- **Microsoft.Web.WebView2** for document preview
+- **System.Windows.Interactivity** for XAML behaviors
+
+### Project Structure
 
 ```
 FlowingFiles/
@@ -73,12 +150,7 @@ FlowingFiles/
 └── FileStatusEnum.cs           # File status enumeration
 ```
 
-## Tech Stack
-
-- **C# / WPF** with MVVM architecture
-- **.NET 6.0** (Windows)
-- **Microsoft.Web.WebView2** for document preview
-- **System.Windows.Interactivity** for XAML behaviors
+---
 
 ## License
 
