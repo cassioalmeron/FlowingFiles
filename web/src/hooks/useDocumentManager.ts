@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
+import { toast } from 'react-toastify';
 import type { FileEntry } from '../types';
 import { documentOptions } from '../data/documentOptions';
 
@@ -29,22 +30,44 @@ export function useDocumentManager() {
   const monthAbbrev = MONTHS[selectedMonth - 1].substring(0, 3);
 
   const exportZip = useCallback(async () => {
-    const zip = new JSZip();
     const filledEntries = files.filter((e) => e.file !== null);
 
-    if (filledEntries.length === 0) return;
-
-    for (const entry of filledEntries) {
-      const ext = entry.file!.name.includes('.')
-        ? '.' + entry.file!.name.split('.').pop()
-        : '';
-      const zipPath = `${entry.option.path}${ext}`;
-      const buffer = await entry.file!.arrayBuffer();
-      zip.file(zipPath, buffer);
+    if (filledEntries.length === 0) {
+      toast.warning('No files selected. Please attach at least one file before exporting.');
+      return;
     }
 
-    const blob = await zip.generateAsync({ type: 'blob' });
-    saveAs(blob, `${monthAbbrev}.zip`);
+    const toastId = toast.loading('Generating ZIP...');
+
+    try {
+      const zip = new JSZip();
+
+      for (const entry of filledEntries) {
+        const ext = entry.file!.name.includes('.')
+          ? '.' + entry.file!.name.split('.').pop()
+          : '';
+        const zipPath = `${entry.option.path}${ext}`;
+        const buffer = await entry.file!.arrayBuffer();
+        zip.file(zipPath, buffer);
+      }
+
+      const blob = await zip.generateAsync({ type: 'blob' });
+      saveAs(blob, `${monthAbbrev}.zip`);
+
+      toast.update(toastId, {
+        render: `${monthAbbrev}.zip exported successfully!`,
+        type: 'success',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } catch {
+      toast.update(toastId, {
+        render: 'Failed to generate ZIP. Please try again.',
+        type: 'error',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    }
   }, [files, monthAbbrev]);
 
   const currentFile = currentIndex !== null ? files[currentIndex] : null;
