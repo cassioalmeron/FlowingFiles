@@ -1,22 +1,35 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
 import type { FileEntry } from '../types';
-import { documentOptions } from '../data/documentOptions';
+import { API_URL } from '../lib/api';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
-function initialFiles(): FileEntry[] {
-  return documentOptions.map((option) => ({ option, file: null }));
-}
-
 export function useDocumentManager() {
-  const [files, setFiles] = useState<FileEntry[]>(initialFiles);
+  const [files, setFiles] = useState<FileEntry[]>([]);
+  const [loading, setLoading] = useState(true);
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
+
+  useEffect(() => {
+    fetch(`${API_URL}/documentoption`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json() as Promise<Array<{ description: string; path: string; required: boolean }>>;
+      })
+      .then((data) => {
+        setFiles(data.map((option) => ({ option, file: null })));
+      })
+      .catch(() => {
+        toast.error('Failed to load document options. Please refresh the page.');
+        setFiles([]);
+      })
+      .finally(() => setLoading(false));
+  }, []);
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
 
   const selectFile = useCallback((index: number, file: File) => {
@@ -74,6 +87,7 @@ export function useDocumentManager() {
 
   return {
     files,
+    loading,
     currentIndex,
     currentFile,
     selectedMonth,

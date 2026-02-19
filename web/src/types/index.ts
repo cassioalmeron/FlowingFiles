@@ -12,6 +12,14 @@ export interface DocumentOption {
   required: boolean;
 }
 
+export interface DocumentOptionItem {
+  id: number;
+  description: string;
+  path: string;
+  required: boolean;
+  position: number;
+}
+
 export interface FileEntry {
   option: DocumentOption;
   file: File | null;

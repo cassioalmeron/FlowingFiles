@@ -1,0 +1,26 @@
+.upload-page {
+  display: flex;
+  flex-direction: column;
+  height: 100vh;
+  overflow: hidden;
+}
+
+.upload-page__body {
+  display: flex;
+  flex: 1;
+  overflow: hidden;
+}
+
+.upload-page__sidebar {
+  width: 480px;
+  min-width: 380px;
+  flex-shrink: 0;
+  overflow: hidden;
+}
+
+.upload-page__main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}

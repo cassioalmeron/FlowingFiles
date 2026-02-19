@@ -36,3 +36,10 @@
   flex-direction: column;
   gap: 8px;
 }
+
+.file-list__loading {
+  color: var(--fg-disabled);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 24px 0;
+}
