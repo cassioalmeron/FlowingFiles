@@ -140,7 +140,7 @@ const FilesConfiguration: React.FC = () => {
       const res = await fetch(`${API_URL}/documentoption`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(documents),
+        body: JSON.stringify(documents.map((d) => ({ ...d, id: d.id < 0 ? 0 : d.id }))),
       });
 
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
