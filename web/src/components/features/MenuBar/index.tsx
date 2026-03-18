@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FolderIcon, GearIcon } from '../../icons';
+import { FolderIcon, GearIcon, MailIcon } from '../../icons';
 import './styles.css';
 
 interface MenuBarProps {
@@ -20,6 +20,9 @@ const MenuBar: React.FC<MenuBarProps> = ({ onExportZip }) => {
             Export ZIP
           </button>
         )}
+        <Link to="/settings/emails" className="menubar__btn" aria-label="Email Registration">
+          <MailIcon size={16} />
+        </Link>
         <Link to="/settings/files" className="menubar__btn" aria-label="Files Configuration">
           <GearIcon size={16} />
         </Link>

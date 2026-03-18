@@ -20,6 +20,12 @@ export interface DocumentOptionItem {
   position: number;
 }
 
+export interface EmailDestinationItem {
+  id: number;
+  emailAddress: string;
+  active: boolean;
+}
+
 export interface FileEntry {
   option: DocumentOption;
   file: File | null;

@@ -7,6 +7,7 @@ namespace FlowingFiles.Core;
 public class FlowingFilesDbContext : DbContext
 {
     public DbSet<DocumentOption> DocumentOptions { get; set; }
+    public DbSet<EmailDestination> EmailDestinations { get; set; }
 
     protected override void OnConfiguring(DbContextOptionsBuilder optionsBuilder)
     {

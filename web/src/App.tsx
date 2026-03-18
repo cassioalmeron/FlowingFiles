@@ -4,6 +4,7 @@ import { ToastContainer } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
 import Upload from './pages/Upload';
 import FilesConfiguration from './pages/FilesConfiguration';
+import EmailRegistration from './pages/EmailRegistration';
 
 const App: React.FC = () => {
   return (
@@ -11,6 +12,7 @@ const App: React.FC = () => {
       <Routes>
         <Route path="/" element={<Upload />} />
         <Route path="/settings/files" element={<FilesConfiguration />} />
+        <Route path="/settings/emails" element={<EmailRegistration />} />
       </Routes>
       <ToastContainer
         position="top-right"
