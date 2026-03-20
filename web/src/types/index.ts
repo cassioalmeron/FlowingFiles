@@ -20,6 +20,13 @@ export interface DocumentOptionItem {
   position: number;
 }
 
+export interface SendEmailRequest {
+  to: string;
+  subject: string;
+  body: string;
+  // attachments: ZIP (always) + optional extra files — sent as FormData
+}
+
 export interface EmailDestinationItem {
   id: number;
   emailAddress: string;

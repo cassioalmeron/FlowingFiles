@@ -1,9 +1,10 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useDocumentManager } from '../../hooks/useDocumentManager';
 import MenuBar from '../../components/features/MenuBar';
 import FileList from '../../components/features/FileList';
 import FilePreview from '../../components/features/FilePreview';
 import Toolbar from '../../components/features/Toolbar';
+import SendEmail from '../../components/features/SendEmail';
 import './styles.css';
 
 const Upload: React.FC = () => {
@@ -13,6 +14,7 @@ const Upload: React.FC = () => {
     currentIndex,
     currentFile,
     selectedMonth,
+    monthAbbrev,
     setCurrentIndex,
     setSelectedMonth,
     selectFile,
@@ -20,6 +22,7 @@ const Upload: React.FC = () => {
     exportZip,
   } = useDocumentManager();
 
+  const [sendEmailOpen, setSendEmailOpen] = useState(false);
   const filledCount = files.filter((f) => f.file !== null).length;
 
   return (
@@ -42,11 +45,22 @@ const Upload: React.FC = () => {
             selectedMonth={selectedMonth}
             onMonthChange={setSelectedMonth}
             onExportZip={exportZip}
+            onSendEmail={() => setSendEmailOpen(true)}
             filledCount={filledCount}
             totalCount={files.length}
           />
         </div>
       </div>
+      {sendEmailOpen && (
+        <SendEmail
+          isOpen={sendEmailOpen}
+          onClose={() => setSendEmailOpen(false)}
+          selectedMonth={selectedMonth}
+          selectedYear={new Date().getFullYear()}
+          files={files}
+          monthAbbrev={monthAbbrev}
+        />
+      )}
     </div>
   );
 };

@@ -1,5 +1,5 @@
 import React from 'react';
-import { DownloadIcon } from '../../icons';
+import { DownloadIcon, SendIcon } from '../../icons';
 import './styles.css';
 
 const MONTHS = [
@@ -11,6 +11,7 @@ interface ToolbarProps {
   selectedMonth: number;
   onMonthChange: (month: number) => void;
   onExportZip: () => void;
+  onSendEmail: () => void;
   filledCount: number;
   totalCount: number;
 }
@@ -19,6 +20,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
   selectedMonth,
   onMonthChange,
   onExportZip,
+  onSendEmail,
   filledCount,
   totalCount,
 }) => {
@@ -46,6 +48,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <span className="toolbar__status">
           {filledCount} / {totalCount} files
         </span>
+        <button
+          className="toolbar__send-btn"
+          onClick={onSendEmail}
+          disabled={filledCount === 0}
+        >
+          <SendIcon size={16} />
+          Send Email
+        </button>
         <button
           className="toolbar__export-btn"
           onClick={onExportZip}

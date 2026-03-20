@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect } from 'react';
-import JSZip from 'jszip';
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
 import type { FileEntry } from '../types';
 import { API_URL } from '../lib/api';
+import { generateZip } from '../lib/zip';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -53,18 +53,7 @@ export function useDocumentManager() {
     const toastId = toast.loading('Generating ZIP...');
 
     try {
-      const zip = new JSZip();
-
-      for (const entry of filledEntries) {
-        const ext = entry.file!.name.includes('.')
-          ? '.' + entry.file!.name.split('.').pop()
-          : '';
-        const zipPath = `${entry.option.path}${ext}`;
-        const buffer = await entry.file!.arrayBuffer();
-        zip.file(zipPath, buffer);
-      }
-
-      const blob = await zip.generateAsync({ type: 'blob' });
+      const blob = await generateZip(files, monthAbbrev);
       saveAs(blob, `${monthAbbrev}.zip`);
 
       toast.update(toastId, {
