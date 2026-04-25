@@ -1,5 +1,5 @@
 import React from 'react';
-import { DownloadIcon, SendIcon } from '../../icons';
+import { AutoClassifyIcon, DownloadIcon, SendIcon } from '../../icons';
 import './styles.css';
 
 const MONTHS = [
@@ -12,8 +12,11 @@ interface ToolbarProps {
   onMonthChange: (month: number) => void;
   onExportZip: () => void;
   onSendEmail: () => void;
+  onAutoClassify: (files: FileList) => void;
+  classifying: boolean;
   filledCount: number;
   totalCount: number;
+  fileInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -21,8 +24,11 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onMonthChange,
   onExportZip,
   onSendEmail,
+  onAutoClassify,
+  classifying,
   filledCount,
   totalCount,
+  fileInputRef,
 }) => {
   return (
     <div className="toolbar">
@@ -48,6 +54,22 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <span className="toolbar__status">
           {filledCount} / {totalCount} files
         </span>
+        <input
+          ref={fileInputRef}
+          type="file"
+          multiple
+          accept=".pdf,.jpg,.jpeg,.png,.xml"
+          style={{ display: 'none' }}
+          onChange={(e) => e.target.files && onAutoClassify(e.target.files)}
+        />
+        <button
+          className="toolbar__classify-btn"
+          onClick={() => fileInputRef.current?.click()}
+          disabled={classifying}
+        >
+          <AutoClassifyIcon size={16} />
+          {classifying ? 'Classifying...' : 'Auto-classify'}
+        </button>
         <button
           className="toolbar__send-btn"
           onClick={onSendEmail}

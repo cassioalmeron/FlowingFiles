@@ -94,3 +94,11 @@ export const SendIcon: React.FC<IconProps> = ({ size = 24, color = 'currentColor
     <path d="m21.854 2.147-10.94 10.939" />
   </svg>
 );
+
+export const AutoClassifyIcon: React.FC<IconProps> = ({ size = 24, color = 'currentColor', className = '' }) => (
+  <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="11" cy="11" r="8" />
+    <path d="m21 21-4.35-4.35" />
+    <path d="M11 8v6M8 11h6" />
+  </svg>
+);

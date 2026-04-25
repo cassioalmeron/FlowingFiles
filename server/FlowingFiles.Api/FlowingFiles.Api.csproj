@@ -21,4 +21,10 @@
     <ProjectReference Include="..\FlowingFiles.Core\FlowingFiles.Core.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Content Include="tessdata\**">
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
+    </Content>
+  </ItemGroup>
+
 </Project>

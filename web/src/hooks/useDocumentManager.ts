@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
 import type { FileEntry } from '../types';
@@ -13,7 +13,9 @@ const MONTHS = [
 export function useDocumentManager() {
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [classifying, setClassifying] = useState(false);
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch(`${API_URL}/documentoption`)
@@ -72,19 +74,63 @@ export function useDocumentManager() {
     }
   }, [files, monthAbbrev]);
 
+  const autoClassify = useCallback(async (selectedFiles: FileList) => {
+    const toastId = toast.loading('Classifying files...');
+    setClassifying(true);
+
+    try {
+      const formData = new FormData();
+      Array.from(selectedFiles).forEach((file) => formData.append('files', file));
+
+      const res = await fetch(`${API_URL}/File/classify`, { method: 'POST', body: formData });
+      if (!res.ok) throw new Error(`HTTP ${res.status}`);
+
+      const labels: string[] = await res.json();
+      const fileArray = Array.from(selectedFiles);
+
+      setFiles((prev) => {
+        const updated = [...prev];
+        fileArray.forEach((file, i) => {
+          const label = labels[i];
+          if (label === 'Unknown') {
+            toast.warning(`Could not classify: ${file.name}`);
+            return;
+          }
+          const slotIndex = updated.findIndex(
+            (e) => e.option.description.toLowerCase() === label.toLowerCase()
+          );
+          if (slotIndex !== -1)
+            updated[slotIndex] = { ...updated[slotIndex], file };
+          else
+            toast.warning(`No slot found for: ${file.name} (${label})`);
+        });
+        return updated;
+      });
+
+      toast.update(toastId, { render: 'Files classified!', type: 'success', isLoading: false, autoClose: 3000 });
+    } catch {
+      toast.update(toastId, { render: 'Classification failed. Please try again.', type: 'error', isLoading: false, autoClose: 3000 });
+    } finally {
+      setClassifying(false);
+    }
+  }, []);
+
   const currentFile = currentIndex !== null ? files[currentIndex] : null;
 
   return {
     files,
     loading,
+    classifying,
     currentIndex,
     currentFile,
     selectedMonth,
     monthAbbrev,
+    fileInputRef,
     setCurrentIndex,
     setSelectedMonth,
     selectFile,
     clearFile,
     exportZip,
+    autoClassify,
   };
 }

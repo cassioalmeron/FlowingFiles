@@ -1,4 +1,4 @@
-﻿using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.DependencyInjection;
 using System.Reflection;
 
 namespace FlowingFiles.Core.Services;
@@ -14,7 +14,6 @@ public static class ServiceCollectionExtensions
                           !type.IsInterface &&
                           type.IsClass);
 
-        // Register each service type as scoped
         foreach (var serviceType in serviceTypes)
             services.AddScoped(serviceType);
 

@@ -11,15 +11,18 @@ const Upload: React.FC = () => {
   const {
     files,
     loading,
+    classifying,
     currentIndex,
     currentFile,
     selectedMonth,
     monthAbbrev,
+    fileInputRef,
     setCurrentIndex,
     setSelectedMonth,
     selectFile,
     clearFile,
     exportZip,
+    autoClassify,
   } = useDocumentManager();
 
   const [sendEmailOpen, setSendEmailOpen] = useState(false);
@@ -46,8 +49,11 @@ const Upload: React.FC = () => {
             onMonthChange={setSelectedMonth}
             onExportZip={exportZip}
             onSendEmail={() => setSendEmailOpen(true)}
+            onAutoClassify={autoClassify}
+            classifying={classifying}
             filledCount={filledCount}
             totalCount={files.length}
+            fileInputRef={fileInputRef}
           />
         </div>
       </div>

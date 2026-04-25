@@ -10,14 +10,14 @@ COPY FlowingFiles.Core/FlowingFiles.Core.csproj FlowingFiles.Core/
 COPY FlowingFiles.Api/FlowingFiles.Api.csproj FlowingFiles.Api/
 COPY FlowingFiles.Tests/FlowingFiles.Tests.csproj FlowingFiles.Tests/
 
-# Restore dependencies - solution level for multi-project dependencies
-RUN dotnet restore FlowingFiles.sln
+# Restore dependencies
+RUN dotnet restore FlowingFiles.Api/FlowingFiles.Api.csproj
 
 # Copy source code
 COPY . .
 
-# Build the solution - solution level to validate all projects
-RUN dotnet build FlowingFiles.sln -c Release -o /app/build
+# Build the API project
+RUN dotnet build FlowingFiles.Api/FlowingFiles.Api.csproj -c Release -o /app/build
 
 # ========================================
 # Stage 2: Publish
@@ -31,8 +31,16 @@ RUN dotnet publish FlowingFiles.Api/FlowingFiles.Api.csproj -c Release -o /app/p
 FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS runtime
 WORKDIR /app
 
-# Install curl for health checks and clean up apt cache to minimize layer size
-RUN apt-get update && apt-get install -y curl && rm -rf /var/lib/apt/lists/*
+# curl: health checks
+# tesseract-ocr: libtesseract native library used by Tesseract NuGet on Linux
+# libfontconfig1: required by SkiaSharp on Linux
+# libgdiplus: required by SkiaSharp/PDFtoImage on Linux
+RUN apt-get update && apt-get install -y \
+    curl \
+    tesseract-ocr \
+    libfontconfig1 \
+    libgdiplus \
+    && rm -rf /var/lib/apt/lists/*
 
 # Create data directory for SQLite with proper permissions
 RUN mkdir -p /app/data && chmod 755 /app/data

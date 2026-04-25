@@ -66,6 +66,29 @@
   cursor: not-allowed;
 }
 
+.toolbar__classify-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: var(--bg-6);
+  color: var(--fg-primary);
+  padding: 8px 20px;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: 1px solid var(--bg-7);
+  transition: background-color 0.15s ease;
+}
+
+.toolbar__classify-btn:hover:not(:disabled) {
+  background-color: var(--bg-7);
+}
+
+.toolbar__classify-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
 .toolbar__send-btn {
   display: flex;
   align-items: center;
