@@ -1,8 +1,10 @@
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Abstractions;
 using System.Xml;
 
 namespace FlowingFiles.Core.Services;
 
-public class FileClassifierService(OcrService ocrService)
+public class FileClassifierService(OcrService ocrService, ILogger<FileClassifierService> logger)
 {
     public async Task<string[]> ClassifyAllAsync(IEnumerable<string> filePaths)
     {
@@ -24,8 +26,9 @@ public class FileClassifierService(OcrService ocrService)
                 _ => "Unknown"
             };
         }
-        catch
+        catch (Exception ex)
         {
+            logger.LogError(ex, "Classification failed for {FileName} ({Extension})", Path.GetFileName(filePath), extension);
             return "Unknown";
         }
     }
@@ -63,6 +66,8 @@ public class FileClassifierService(OcrService ocrService)
         if (text.Contains("ISS E TAXAS: TAXA DE FISCALIZAÇÃO"))
             return "Alvará - Boleto";
 
+        logger.LogWarning("PDF not classified: {FileName}. Extracted text (first 500 chars): {PdfText}",
+            Path.GetFileName(filePath), text[..Math.Min(500, text.Length)]);
         return "Unknown";
     }
 
@@ -87,10 +92,12 @@ public class FileClassifierService(OcrService ocrService)
         if (text.Contains("Nome Receita Federal"))
             return "DARF_INSS - Comprovante";
 
+        logger.LogWarning("Image not classified: {FileName}. OCR text: {OcrText}",
+            Path.GetFileName(filePath), text);
         return "Unknown";
     }
 
-    private static string ClassifyXml(string filePath)
+    private string ClassifyXml(string filePath)
     {
         var xml = new XmlDocument();
         xml.Load(filePath);
@@ -103,12 +110,15 @@ public class FileClassifierService(OcrService ocrService)
         if (cnpj == "46539874000112")
             return "NFSE - XML";
 
+        logger.LogWarning("XML not classified: {FileName}. CNPJ: {Cnpj}", Path.GetFileName(filePath), cnpj ?? "null");
         return "Unknown";
     }
 
     public static async Task<string> Classify(string filePath)
     {
-        var service = new FileClassifierService(new OcrService());
+        var service = new FileClassifierService(
+            new OcrService(NullLogger<OcrService>.Instance),
+            NullLogger<FileClassifierService>.Instance);
         return await service.ClassifyAsync(filePath);
     }
 }
