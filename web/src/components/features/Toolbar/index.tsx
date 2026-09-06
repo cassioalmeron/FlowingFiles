@@ -1,5 +1,5 @@
 import React from 'react';
-import { AutoClassifyIcon, DownloadIcon, SendIcon } from '../../icons';
+import { AutoClassifyIcon, DownloadIcon, ImportIcon, SendIcon } from '../../icons';
 import './styles.css';
 
 const MONTHS = [
@@ -13,10 +13,13 @@ interface ToolbarProps {
   onExportZip: () => void;
   onSendEmail: () => void;
   onAutoClassify: (files: FileList) => void;
+  onImportZip: (archive: File) => void;
   classifying: boolean;
+  importing: boolean;
   filledCount: number;
   totalCount: number;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
+  zipInputRef: React.RefObject<HTMLInputElement | null>;
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -25,10 +28,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onExportZip,
   onSendEmail,
   onAutoClassify,
+  onImportZip,
   classifying,
+  importing,
   filledCount,
   totalCount,
   fileInputRef,
+  zipInputRef,
 }) => {
   return (
     <div className="toolbar">
@@ -54,6 +60,25 @@ const Toolbar: React.FC<ToolbarProps> = ({
         <span className="toolbar__status">
           {filledCount} / {totalCount} files
         </span>
+        <input
+          ref={zipInputRef}
+          type="file"
+          accept=".zip"
+          style={{ display: 'none' }}
+          onChange={(e) => {
+            const archive = e.target.files?.[0];
+            if (archive) onImportZip(archive);
+            e.target.value = '';
+          }}
+        />
+        <button
+          className="toolbar__import-btn"
+          onClick={() => zipInputRef.current?.click()}
+          disabled={importing}
+        >
+          <ImportIcon size={16} />
+          {importing ? 'Loading...' : 'Import ZIP'}
+        </button>
         <input
           ref={fileInputRef}
           type="file"

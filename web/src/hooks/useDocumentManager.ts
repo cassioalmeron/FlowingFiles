@@ -3,7 +3,7 @@ import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
 import type { FileEntry } from '../types';
 import { API_URL } from '../lib/api';
-import { generateZip } from '../lib/zip';
+import { documentPathKey, generateZip, parseZip } from '../lib/zip';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -14,8 +14,10 @@ export function useDocumentManager() {
   const [files, setFiles] = useState<FileEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [classifying, setClassifying] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const zipInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     fetch(`${API_URL}/documentoption`)
@@ -115,22 +117,72 @@ export function useDocumentManager() {
     }
   }, []);
 
+  const importZip = useCallback(async (archive: File) => {
+    const toastId = toast.loading('Loading ZIP...');
+    setImporting(true);
+
+    try {
+      const { entries, monthAbbrev } = await parseZip(archive);
+      const used = new Set<string>();
+
+      const updated = files.map((entry) => {
+        const key = documentPathKey(entry.option.path);
+        const match =
+          entries.find((e) => !used.has(e.path) && e.key === key) ??
+          entries.find((e) => !used.has(e.path) && e.key.toLowerCase() === key.toLowerCase());
+        if (match) used.add(match.path);
+        return { ...entry, file: match?.file ?? null };
+      });
+
+      setFiles(updated);
+      setCurrentIndex(null);
+
+      const monthIndex = monthAbbrev
+        ? MONTHS.findIndex((name) => name.substring(0, 3) === monthAbbrev)
+        : -1;
+      if (monthIndex !== -1) setSelectedMonth(monthIndex + 1);
+
+      toast.update(toastId, {
+        render: `${used.size} of ${entries.length} files loaded from the archive.`,
+        type: used.size === 0 ? 'warning' : 'success',
+        isLoading: false,
+        autoClose: 3000,
+      });
+
+      entries
+        .filter((e) => !used.has(e.path))
+        .forEach((e) => toast.warning(`No slot found for: ${e.path}`));
+    } catch {
+      toast.update(toastId, {
+        render: 'Failed to read the ZIP. Please select an archive exported by this application.',
+        type: 'error',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } finally {
+      setImporting(false);
+    }
+  }, [files]);
+
   const currentFile = currentIndex !== null ? files[currentIndex] : null;
 
   return {
     files,
     loading,
     classifying,
+    importing,
     currentIndex,
     currentFile,
     selectedMonth,
     monthAbbrev,
     fileInputRef,
+    zipInputRef,
     setCurrentIndex,
     setSelectedMonth,
     selectFile,
     clearFile,
     exportZip,
     autoClassify,
+    importZip,
   };
 }
