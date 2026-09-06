@@ -1,6 +1,5 @@
 using MailKit.Net.Smtp;
 using MailKit.Security;
-using Microsoft.Extensions.Configuration;
 using MimeKit;
 
 namespace FlowingFiles.Core.Services;
@@ -12,10 +11,12 @@ public class GmailService
     private readonly string _user;
     private readonly string _appPassword;
 
-    public GmailService(IConfiguration config)
+    public GmailService()
     {
-        _user = config["Gmail:User"] ?? throw new InvalidOperationException("Gmail:User not configured");
-        _appPassword = config["Gmail:AppPassword"] ?? throw new InvalidOperationException("Gmail:AppPassword not configured");
+        _user = Environment.GetEnvironmentVariable("GMAIL_USER")
+            ?? throw new InvalidOperationException("GMAIL_USER is not configured.");
+        _appPassword = Environment.GetEnvironmentVariable("GMAIL_APP_PASSWORD")
+            ?? throw new InvalidOperationException("GMAIL_APP_PASSWORD is not configured.");
     }
 
     public async Task SendAsync(string to, string subject, string body, IEnumerable<(string fileName, Stream content)> attachments)

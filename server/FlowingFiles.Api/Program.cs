@@ -4,6 +4,9 @@ using FlowingFiles.Core.Services;
 using Microsoft.EntityFrameworkCore;
 using Serilog;
 
+// Walks up from the working directory until it finds the repository root file with the settings.
+DotNetEnv.Env.TraversePath().Load();
+
 var folder = Environment.SpecialFolder.LocalApplicationData;
 var path = Environment.GetFolderPath(folder);
 path = Path.Combine(path, "FlowingFiles", "Logs");
