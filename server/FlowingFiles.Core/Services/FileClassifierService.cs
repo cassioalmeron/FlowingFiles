@@ -1,18 +1,21 @@
+using FlowingFiles.Core.Dtos;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Abstractions;
 using System.Xml;
 
 namespace FlowingFiles.Core.Services;
 
-public class FileClassifierService(OcrService ocrService, ILogger<FileClassifierService> logger)
+public class FileClassifierService(
+    OcrService ocrService,
+    SimilarityClassifierService similarityClassifierService,
+    ILogger<FileClassifierService> logger)
 {
-    public async Task<string[]> ClassifyAllAsync(IEnumerable<string> filePaths)
+    public async Task<FileClassification[]> ClassifyAllAsync(IEnumerable<string> filePaths)
     {
         var tasks = filePaths.Select(ClassifyAsync);
         return await Task.WhenAll(tasks);
     }
 
-    public async Task<string> ClassifyAsync(string filePath)
+    public async Task<FileClassification> ClassifyAsync(string filePath)
     {
         var extension = Path.GetExtension(filePath).ToLower();
 
@@ -22,79 +25,44 @@ public class FileClassifierService(OcrService ocrService, ILogger<FileClassifier
             {
                 ".pdf" => await ClassifyPdfAsync(filePath),
                 ".jpg" or ".jpeg" or ".png" => await ClassifyImageAsync(filePath),
-                ".xml" => ClassifyXml(filePath),
-                _ => "Unknown"
+                ".xml" => new FileClassification(ClassifyXml(filePath), ClassificationMethod.Rule, null),
+                _ => new FileClassification("Unknown", ClassificationMethod.Rule, null)
             };
         }
         catch (Exception ex)
         {
             logger.LogError(ex, "Classification failed for {FileName} ({Extension})", Path.GetFileName(filePath), extension);
-            return "Unknown";
+            return new FileClassification("Unknown", ClassificationMethod.Rule, null);
         }
     }
 
-    private async Task<string> ClassifyPdfAsync(string filePath)
+    private async Task<FileClassification> ClassifyPdfAsync(string filePath)
     {
         var text = await PdfTextService.ExtractTextAsync(filePath);
 
-        if (text.Contains("Sacador/Avalista: E-CONT CONTABILIDADE LTDA (11.462.634/0001-82)"))
-            return "E-Cont - Boleto";
-        if (text.Contains("E-CONT CONTABILIDADE LTDA"))
-            return "E-Cont - PDF";
-        if (text.StartsWith("CASSIO ALMERON SOFTWARE ENGINEERING LTDA"))
-            return "Relatorio";
-        if (text.Contains("CASSIO ALMERON SOFTWARE ENGINEERING") && (text.Contains("Instituição: Banco Inter") || text.Contains("Instituicao: Banco Inter")))
-            return "Extrato Inter";
-        if (text.Contains("CASSIO ALMERON SOFTWARE ENGINEERING LTDA") && text.Contains("Conta Digital XP"))
-            return "Extrato - XP";
-        if (text.Contains("Demonstrativo de Pagamento"))
-            return "Folha de Pagamento - Contra Cheque";
-        if (text.Contains("CSLL - LUCRO PRESUMIDO OU ARBITRADO"))
-            return "CSLL - Boleto";
-        if (text.Contains("IRPJ - LUCRO PRESUMIDO"))
-            return "IRPJ - Boleto";
-        if (text.Contains("Documento de Arrecadacao de Receitas Federais") || text.Contains("Documento de Arrecadação de Receitas Federais"))
-            return "DARF_INSS - Boleto";
-        if (text.Contains("qrcode.sicredi.com.br"))
-            return "New Office - Boleto";
-        if (text.Contains("emitida por CASSIO ALMERON SOFTWARE ENGINEERING LTDA"))
-            return "NFSE - PDF";
-        if (text.Contains("emitida por E-CONT CONTABILIDADE LTDA"))
-            return "E-Cont - PDF";
-        if (text.Contains("emitida por NEW OFFICE CENTRO APOIO ADMINISTRATIVO ESCRITORIO LTDA"))
-            return "New Office - PDF";
-        if (text.Contains("ISS E TAXAS: TAXA DE FISCALIZAÇÃO"))
-            return "Alvará - Boleto";
-
-        logger.LogWarning("PDF not classified: {FileName}. Extracted text (first 500 chars): {PdfText}",
-            Path.GetFileName(filePath), text[..Math.Min(500, text.Length)]);
-        return "Unknown";
+        var result = await similarityClassifierService.ClassifyAsync(text);
+        LogSimilarityResult(filePath, result);
+        return new FileClassification(result.Label, ClassificationMethod.Similarity, result.Neighbours);
     }
 
-    private async Task<string> ClassifyImageAsync(string filePath)
+    private async Task<FileClassification> ClassifyImageAsync(string filePath)
     {
         var text = await ocrService.ExtractTextAsync(filePath);
 
-        if (text.Contains("R$ 400,00"))
-            return "E-Cont - Comprovante";
-        if (text.Contains("R$ 100,00"))
-            return "New Office - Comprovante";
-        if (text.Contains("Folha de pagamento"))
-            return "PIX - Folha de Pagamento";
-        if (text.Contains("Divisao de lucros") || text.Contains("Divisão de lucros"))
-            return "PIX - Divisao de Lucros";
-        if (text.Contains("PREFEITURA MUNICIPAL DE SAO JOSE"))
-            return "Alvará - Comprovante";
-        if (text.Contains("3336662"))
-            return "IRPJ - Comprovante";
-        if (text.Contains("810100"))
-            return "CSLL - Comprovante";
-        if (text.Contains("Nome Receita Federal"))
-            return "DARF_INSS - Comprovante";
+        var result = await similarityClassifierService.ClassifyAsync(text);
+        LogSimilarityResult(filePath, result);
+        return new FileClassification(result.Label, ClassificationMethod.Similarity, result.Neighbours);
+    }
 
-        logger.LogWarning("Image not classified: {FileName}. OCR text: {OcrText}",
-            Path.GetFileName(filePath), text);
-        return "Unknown";
+    private void LogSimilarityResult(string filePath, ClassificationResult result)
+    {
+        var neighbours = result.Neighbours.Count == 0
+            ? "(no samples in corpus)"
+            : string.Join(", ", result.Neighbours.Select(n => $"{n.Label}={n.Similarity:F3}"));
+
+        logger.LogInformation(
+            "Similarity classification for {FileName}: label={Label} confidence={Confidence:F3} neighbours=[{Neighbours}]",
+            Path.GetFileName(filePath), result.Label, result.Confidence, neighbours);
     }
 
     private string ClassifyXml(string filePath)
@@ -112,13 +80,5 @@ public class FileClassifierService(OcrService ocrService, ILogger<FileClassifier
 
         logger.LogWarning("XML not classified: {FileName}. CNPJ: {Cnpj}", Path.GetFileName(filePath), cnpj ?? "null");
         return "Unknown";
-    }
-
-    public static async Task<string> Classify(string filePath)
-    {
-        var service = new FileClassifierService(
-            new OcrService(NullLogger<OcrService>.Instance),
-            NullLogger<FileClassifierService>.Instance);
-        return await service.ClassifyAsync(filePath);
     }
 }

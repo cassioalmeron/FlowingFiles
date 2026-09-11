@@ -1,3 +1,4 @@
+using FlowingFiles.Core.Dtos;
 using FlowingFiles.Core.Services;
 using Microsoft.AspNetCore.Mvc;
 
@@ -8,7 +9,7 @@ namespace FlowingFiles.Api.Controllers;
 public class FileController(FileClassifierService fileClassifierService) : ControllerBase
 {
     [HttpPost("classify")]
-    public async Task<ActionResult<string[]>> Classify(IFormFileCollection files)
+    public async Task<ActionResult<FileClassification[]>> Classify(IFormFileCollection files)
     {
         if (files.Count == 0)
             return BadRequest("At least one file is required.");

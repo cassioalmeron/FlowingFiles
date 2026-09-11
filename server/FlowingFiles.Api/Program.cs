@@ -2,7 +2,9 @@ using FlowingFiles.Api.Middleware;
 using FlowingFiles.Core;
 using FlowingFiles.Core.Services;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Serilog;
+using System.Text.Json.Serialization;
 
 // Walks up from the working directory until it finds the repository root file with the settings.
 DotNetEnv.Env.TraversePath().Load();
@@ -45,11 +47,38 @@ builder.Services.AddCors(options =>
 
 builder.Services.AddDbContext<FlowingFilesDbContext>();
 
-builder.Services.AddControllers();
+// String-serialize enums (e.g. ClassificationMethod) instead of the numeric default, so the JSON
+// contract stays "Rule"/"Similarity" — no frontend change needed for this DTO's Method field.
+builder.Services.AddControllers()
+    .AddJsonOptions(options => options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter()));
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
 builder.Services.AddInfrastructuralServices();
+
+// appsettings.json supplies the defaults (Threshold, K have no env var equivalent); BaseUrl and
+// EmbeddingModel are then overridden from OLLAMA_BASE_URL / OLLAMA_EMBEDDING_MODEL when set — flat
+// names read directly, matching how DatabaseSettings/GmailService read env vars in this project
+// (Environment.GetEnvironmentVariable, not the Section__Key convention IConfiguration expects).
+builder.Services.Configure<OllamaSettings>(builder.Configuration.GetSection("Ollama"));
+builder.Services.PostConfigure<OllamaSettings>(settings =>
+{
+    var baseUrl = Environment.GetEnvironmentVariable("OLLAMA_BASE_URL");
+    if (!string.IsNullOrEmpty(baseUrl))
+        settings.BaseUrl = baseUrl;
+
+    var embeddingModel = Environment.GetEnvironmentVariable("OLLAMA_EMBEDDING_MODEL");
+    if (!string.IsNullOrEmpty(embeddingModel))
+        settings.EmbeddingModel = embeddingModel;
+});
+
+// Registered after AddInfrastructuralServices() so this typed-client registration wins over that
+// method's blanket AddScoped(EmbeddingService) — EF/DI resolves the last registration for a type.
+builder.Services.AddHttpClient<EmbeddingService>((sp, client) =>
+{
+    var settings = sp.GetRequiredService<IOptions<OllamaSettings>>().Value;
+    client.BaseAddress = new Uri(settings.BaseUrl);
+});
 
 var app = builder.Build();
 

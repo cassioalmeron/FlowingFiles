@@ -54,10 +54,5 @@ public class EmailController : ControllerBase
             _logger.LogError(ex, "SMTP error sending email to {To}", to);
             return StatusCode(500, "Failed to send email. Please verify recipient addresses.");
         }
-        catch (Exception ex)
-        {
-            _logger.LogError(ex, "Unexpected error sending email to {To}", to);
-            return StatusCode(500, "An unexpected error occurred while sending the email");
-        }
     }
 }

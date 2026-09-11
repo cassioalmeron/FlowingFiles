@@ -1,7 +1,6 @@
-﻿namespace FlowingFiles.Core.Models
+namespace FlowingFiles.Core.Models;
+
+public record EntityBase
 {
-    public record EntityBase
-    {
-        public int Id { get; set; }
-    }
+    public int Id { get; set; }
 }

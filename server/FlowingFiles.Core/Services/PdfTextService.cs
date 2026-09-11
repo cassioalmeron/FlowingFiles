@@ -6,23 +6,38 @@ using UglyToad.PdfPig.Core;
 
 namespace FlowingFiles.Core.Services;
 
+public enum PdfExtractionMode
+{
+    Raw,
+    LayoutPreserving
+}
+
 public class PdfTextService
 {
-    public static Task<string> ExtractTextAsync(string filePath)
+    public static Task<string> ExtractTextAsync(string filePath, PdfExtractionMode mode = PdfExtractionMode.Raw)
     {
         try
         {
-            return Task.FromResult(ExtractText(filePath));
+            return Task.FromResult(Sanitize(ExtractText(filePath, mode)));
         }
         catch (PdfDocumentFormatException)
         {
-            return Task.FromResult(ExtractViaOcr(filePath));
+            return Task.FromResult(Sanitize(ExtractViaOcr(filePath)));
         }
     }
 
-    private static string ExtractText(string filePath)
+    // Certain PDF font encodings make PdfPig yield embedded NUL characters; Postgres `text` columns
+    // reject them outright ("invalid byte sequence for encoding UTF8: 0x00"), so strip them at the
+    // one point every extraction path converges rather than at every caller.
+    private static string Sanitize(string text) => text.Replace("\0", string.Empty);
+
+    private static string ExtractText(string filePath, PdfExtractionMode mode)
     {
         using var document = PdfDocument.Open(filePath, new ParsingOptions { UseLenientParsing = true });
+
+        if (mode == PdfExtractionMode.LayoutPreserving)
+            return PdfLayoutRenderer.Render(document);
+
         return string.Join(Environment.NewLine,
             document.GetPages().Select(page =>
                 string.Join(" ", page.GetWords().Select(w => w.Text))));

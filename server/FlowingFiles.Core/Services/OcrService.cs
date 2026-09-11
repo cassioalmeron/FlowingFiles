@@ -35,7 +35,10 @@ public class OcrService(ILogger<OcrService> logger)
                 return string.Empty;
             }
 
-            return await File.ReadAllTextAsync(outputFile);
+            // Postgres `text` columns reject embedded NUL characters outright; strip any that OCR
+            // produces from noisy input (same reasoning as PdfTextService.Sanitize).
+            var text = await File.ReadAllTextAsync(outputFile);
+            return text.Replace("\0", string.Empty);
         }
         catch (Exception ex)
         {
