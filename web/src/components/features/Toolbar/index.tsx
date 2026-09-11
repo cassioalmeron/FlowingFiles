@@ -1,5 +1,5 @@
-import React from 'react';
-import { AutoClassifyIcon, DownloadIcon, ImportIcon, SendIcon } from '../../icons';
+import React, { useEffect, useRef, useState } from 'react';
+import { AutoClassifyIcon, DownloadIcon, ImportIcon, InfoIcon, LayersIcon, MoreIcon, SendIcon } from '../../icons';
 import './styles.css';
 
 const MONTHS = [
@@ -14,8 +14,12 @@ interface ToolbarProps {
   onSendEmail: () => void;
   onAutoClassify: (files: FileList) => void;
   onImportZip: (archive: File) => void;
+  onIngestSamples: () => void;
+  onShowClassificationDetails: () => void;
   classifying: boolean;
   importing: boolean;
+  ingesting: boolean;
+  hasClassifications: boolean;
   filledCount: number;
   totalCount: number;
   fileInputRef: React.RefObject<HTMLInputElement | null>;
@@ -29,13 +33,32 @@ const Toolbar: React.FC<ToolbarProps> = ({
   onSendEmail,
   onAutoClassify,
   onImportZip,
+  onIngestSamples,
+  onShowClassificationDetails,
   classifying,
   importing,
+  ingesting,
+  hasClassifications,
   filledCount,
   totalCount,
   fileInputRef,
   zipInputRef,
 }) => {
+  const [moreMenuOpen, setMoreMenuOpen] = useState(false);
+  const moreMenuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    if (!moreMenuOpen) return;
+
+    const handleClickOutside = (e: MouseEvent) => {
+      if (moreMenuRef.current && !moreMenuRef.current.contains(e.target as Node))
+        setMoreMenuOpen(false);
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [moreMenuOpen]);
+
   return (
     <div className="toolbar">
       <div className="toolbar__left">
@@ -71,14 +94,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
             e.target.value = '';
           }}
         />
-        <button
-          className="toolbar__import-btn"
-          onClick={() => zipInputRef.current?.click()}
-          disabled={importing}
-        >
-          <ImportIcon size={16} />
-          {importing ? 'Loading...' : 'Import ZIP'}
-        </button>
         <input
           ref={fileInputRef}
           type="file"
@@ -96,6 +111,15 @@ const Toolbar: React.FC<ToolbarProps> = ({
           {classifying ? 'Classifying...' : 'Auto-classify'}
         </button>
         <button
+          className="toolbar__info-btn"
+          onClick={onShowClassificationDetails}
+          disabled={!hasClassifications}
+          title="View classification details for every attached file"
+          aria-label="Classification details"
+        >
+          <InfoIcon size={16} />
+        </button>
+        <button
           className="toolbar__send-btn"
           onClick={onSendEmail}
           disabled={filledCount === 0}
@@ -111,6 +135,46 @@ const Toolbar: React.FC<ToolbarProps> = ({
           <DownloadIcon size={16} />
           Export as ZIP
         </button>
+
+        <div className="toolbar__more" ref={moreMenuRef}>
+          <button
+            className="toolbar__more-btn"
+            onClick={() => setMoreMenuOpen((prev) => !prev)}
+            title="More actions"
+            aria-label="More actions"
+            aria-expanded={moreMenuOpen}
+          >
+            <MoreIcon size={18} />
+          </button>
+
+          {moreMenuOpen && (
+            <div className="toolbar__more-menu">
+              <button
+                className="toolbar__more-menu-item"
+                onClick={() => {
+                  setMoreMenuOpen(false);
+                  zipInputRef.current?.click();
+                }}
+                disabled={importing}
+              >
+                <ImportIcon size={16} />
+                {importing ? 'Loading...' : 'Import ZIP'}
+              </button>
+              <button
+                className="toolbar__more-menu-item"
+                onClick={() => {
+                  setMoreMenuOpen(false);
+                  onIngestSamples();
+                }}
+                disabled={ingesting || filledCount === 0}
+                title="Save the attached files as labelled training samples for the similarity classifier"
+              >
+                <LayersIcon size={16} />
+                {ingesting ? 'Ingesting...' : 'Ingest as samples'}
+              </button>
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

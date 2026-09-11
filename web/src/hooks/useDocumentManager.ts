@@ -1,9 +1,9 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { saveAs } from 'file-saver';
 import { toast } from 'react-toastify';
-import type { FileEntry } from '../types';
+import type { FileClassificationResult, FileEntry } from '../types';
 import { API_URL } from '../lib/api';
-import { documentPathKey, generateZip, parseZip } from '../lib/zip';
+import { generateZip, matchEntriesToOptions, parseZip } from '../lib/zip';
 
 const MONTHS = [
   'January', 'February', 'March', 'April', 'May', 'June',
@@ -15,6 +15,7 @@ export function useDocumentManager() {
   const [loading, setLoading] = useState(true);
   const [classifying, setClassifying] = useState(false);
   const [importing, setImporting] = useState(false);
+  const [ingesting, setIngesting] = useState(false);
   const [currentIndex, setCurrentIndex] = useState<number | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const zipInputRef = useRef<HTMLInputElement>(null);
@@ -23,7 +24,7 @@ export function useDocumentManager() {
     fetch(`${API_URL}/documentoption`)
       .then((res) => {
         if (!res.ok) throw new Error(`HTTP ${res.status}`);
-        return res.json() as Promise<Array<{ description: string; path: string; required: boolean }>>;
+        return res.json() as Promise<Array<{ id: number; description: string; path: string; required: boolean }>>;
       })
       .then((data) => {
         setFiles(data.map((option) => ({ option, file: null })));
@@ -37,11 +38,12 @@ export function useDocumentManager() {
   const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
 
   const selectFile = useCallback((index: number, file: File) => {
-    setFiles((prev) => prev.map((entry, i) => (i === index ? { ...entry, file } : entry)));
+    // A manually chosen file invalidates any classification info from a previous auto-classify run.
+    setFiles((prev) => prev.map((entry, i) => (i === index ? { ...entry, file, classification: undefined } : entry)));
   }, []);
 
   const clearFile = useCallback((index: number) => {
-    setFiles((prev) => prev.map((entry, i) => (i === index ? { ...entry, file: null } : entry)));
+    setFiles((prev) => prev.map((entry, i) => (i === index ? { ...entry, file: null, classification: undefined } : entry)));
   }, []);
 
   const monthAbbrev = MONTHS[selectedMonth - 1].substring(0, 3);
@@ -87,24 +89,24 @@ export function useDocumentManager() {
       const res = await fetch(`${API_URL}/File/classify`, { method: 'POST', body: formData });
       if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
-      const labels: string[] = await res.json();
+      const classifications: FileClassificationResult[] = await res.json();
       const fileArray = Array.from(selectedFiles);
 
       setFiles((prev) => {
         const updated = [...prev];
         fileArray.forEach((file, i) => {
-          const label = labels[i];
-          if (label === 'Unknown') {
+          const classification = classifications[i];
+          if (classification.label === 'Unknown') {
             toast.warning(`Could not classify: ${file.name}`);
             return;
           }
           const slotIndex = updated.findIndex(
-            (e) => e.option.description.toLowerCase() === label.toLowerCase()
+            (e) => e.option.description.toLowerCase() === classification.label.toLowerCase()
           );
           if (slotIndex !== -1)
-            updated[slotIndex] = { ...updated[slotIndex], file };
+            updated[slotIndex] = { ...updated[slotIndex], file, classification };
           else
-            toast.warning(`No slot found for: ${file.name} (${label})`);
+            toast.warning(`No slot found for: ${file.name} (${classification.label})`);
         });
         return updated;
       });
@@ -123,16 +125,13 @@ export function useDocumentManager() {
 
     try {
       const { entries, monthAbbrev } = await parseZip(archive);
-      const used = new Set<string>();
+      const { matchesByOptionId, unmatched } = matchEntriesToOptions(entries, files.map((f) => f.option));
 
-      const updated = files.map((entry) => {
-        const key = documentPathKey(entry.option.path);
-        const match =
-          entries.find((e) => !used.has(e.path) && e.key === key) ??
-          entries.find((e) => !used.has(e.path) && e.key.toLowerCase() === key.toLowerCase());
-        if (match) used.add(match.path);
-        return { ...entry, file: match?.file ?? null };
-      });
+      const updated = files.map((entry) => ({
+        ...entry,
+        file: matchesByOptionId.get(entry.option.id)?.file ?? null,
+        classification: undefined,
+      }));
 
       setFiles(updated);
       setCurrentIndex(null);
@@ -143,15 +142,13 @@ export function useDocumentManager() {
       if (monthIndex !== -1) setSelectedMonth(monthIndex + 1);
 
       toast.update(toastId, {
-        render: `${used.size} of ${entries.length} files loaded from the archive.`,
-        type: used.size === 0 ? 'warning' : 'success',
+        render: `${matchesByOptionId.size} of ${entries.length} files loaded from the archive.`,
+        type: matchesByOptionId.size === 0 ? 'warning' : 'success',
         isLoading: false,
         autoClose: 3000,
       });
 
-      entries
-        .filter((e) => !used.has(e.path))
-        .forEach((e) => toast.warning(`No slot found for: ${e.path}`));
+      unmatched.forEach((e) => toast.warning(`No slot found for: ${e.path}`));
     } catch {
       toast.update(toastId, {
         render: 'Failed to read the ZIP. Please select an archive exported by this application.',
@@ -164,6 +161,49 @@ export function useDocumentManager() {
     }
   }, [files]);
 
+  // Bulk route into DocumentSample (Design Decision 7, plan 003): every filled slot becomes one
+  // POST /documentsample call. .xml entries are skipped — they're classified by CNPJ and never
+  // reach the embedding path, so there is nothing useful to ingest for them.
+  const ingestSamples = useCallback(async () => {
+    const candidates = files.filter(
+      (e) => e.file !== null && !e.file.name.toLowerCase().endsWith('.xml')
+    );
+
+    if (candidates.length === 0) {
+      toast.warning('No files to ingest as samples.');
+      return;
+    }
+
+    const toastId = toast.loading('Ingesting samples...');
+    setIngesting(true);
+    let succeeded = 0;
+
+    try {
+      for (const entry of candidates) {
+        try {
+          const formData = new FormData();
+          formData.append('documentOptionId', String(entry.option.id));
+          formData.append('files', entry.file as File);
+
+          const res = await fetch(`${API_URL}/documentsample`, { method: 'POST', body: formData });
+          if (!res.ok) throw new Error(`HTTP ${res.status}`);
+          succeeded++;
+        } catch {
+          toast.warning(`Failed to ingest: ${entry.file!.name}`);
+        }
+      }
+
+      toast.update(toastId, {
+        render: `${succeeded} of ${candidates.length} samples ingested.`,
+        type: succeeded === candidates.length ? 'success' : 'warning',
+        isLoading: false,
+        autoClose: 3000,
+      });
+    } finally {
+      setIngesting(false);
+    }
+  }, [files]);
+
   const currentFile = currentIndex !== null ? files[currentIndex] : null;
 
   return {
@@ -171,6 +211,7 @@ export function useDocumentManager() {
     loading,
     classifying,
     importing,
+    ingesting,
     currentIndex,
     currentFile,
     selectedMonth,
@@ -184,5 +225,6 @@ export function useDocumentManager() {
     exportZip,
     autoClassify,
     importZip,
+    ingestSamples,
   };
 }

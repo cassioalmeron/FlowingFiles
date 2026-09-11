@@ -1,0 +1,204 @@
+.classification-details-backdrop {
+  position: fixed;
+  inset: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+}
+
+.classification-details-dialog {
+  background-color: var(--bg-3);
+  border: 1px solid var(--bg-5);
+  border-radius: var(--radius-sm);
+  display: flex;
+  flex-direction: column;
+  width: 90%;
+  max-width: 640px;
+  max-height: 85vh;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.3);
+}
+
+.classification-details-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1.25rem;
+  border-bottom: 1px solid var(--bg-5);
+}
+
+.classification-details-title {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin: 0;
+  color: var(--fg-primary);
+}
+
+.classification-details-title h2 {
+  margin: 0;
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+
+.classification-details-close {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  cursor: pointer;
+  color: var(--fg-primary);
+  padding: 0;
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: var(--radius-sm);
+  transition: background-color 0.2s;
+}
+
+.classification-details-close:hover {
+  background-color: var(--bg-5);
+}
+
+.classification-details-content {
+  flex: 1;
+  padding: 1.25rem;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.classification-details-empty {
+  color: var(--fg-disabled);
+  font-size: 0.875rem;
+  text-align: center;
+  padding: 2rem 0;
+}
+
+.classification-details-row {
+  background-color: var(--bg-5);
+  border: 1px solid var(--bg-7);
+  border-radius: var(--radius-sm);
+  padding: 0.75rem;
+}
+
+.classification-details-row-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+}
+
+.classification-details-file {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.classification-details-slot {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--fg-primary);
+}
+
+.classification-details-filename {
+  font-size: 0.75rem;
+  color: var(--fg-secondary);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.classification-details-badge {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 600;
+  padding: 3px 10px;
+  border-radius: var(--radius-sm);
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+}
+
+.classification-details-badge--rule {
+  background-color: var(--bg-6);
+  color: var(--fg-secondary);
+}
+
+.classification-details-badge--similarity {
+  background-color: var(--accent-2);
+  color: white;
+}
+
+.classification-details-badge--none {
+  background-color: var(--bg-6);
+  color: var(--fg-disabled);
+}
+
+.classification-details-neighbours {
+  margin-top: 0.6rem;
+  padding-top: 0.6rem;
+  border-top: 1px solid var(--bg-7);
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.classification-details-neighbour {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: var(--fg-secondary);
+  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+}
+
+.classification-details-neighbour--best {
+  color: var(--fg-primary);
+  background-color: var(--bg-6);
+  font-weight: 600;
+}
+
+.classification-details-score {
+  font-variant-numeric: tabular-nums;
+}
+
+.classification-details-footer {
+  display: flex;
+  justify-content: flex-end;
+  padding: 1.25rem;
+  border-top: 1px solid var(--bg-5);
+}
+
+.classification-details-btn {
+  padding: 0.625rem 1.25rem;
+  background-color: var(--bg-6);
+  color: var(--fg-primary);
+  border: 1px solid var(--bg-7);
+  border-radius: var(--radius-sm);
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.classification-details-btn:hover {
+  background-color: var(--bg-7);
+}
+
+.classification-details-content::-webkit-scrollbar {
+  width: 6px;
+}
+
+.classification-details-content::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.classification-details-content::-webkit-scrollbar-thumb {
+  background-color: var(--bg-7);
+  border-radius: 3px;
+}

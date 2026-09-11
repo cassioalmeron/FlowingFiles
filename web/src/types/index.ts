@@ -7,6 +7,7 @@ export const FileStatus = {
 export type FileStatus = (typeof FileStatus)[keyof typeof FileStatus];
 
 export interface DocumentOption {
+  id: number;
   description: string;
   path: string;
   required: boolean;
@@ -33,9 +34,40 @@ export interface EmailDestinationItem {
   active: boolean;
 }
 
+export interface DocumentSampleItem {
+  id: number;
+  documentOptionId: number;
+  sourceFileName: string;
+  createdAt: string;
+}
+
+export interface DocumentSampleGroup {
+  documentOptionId: number;
+  documentOptionDescription: string;
+  count: number;
+  samples: DocumentSampleItem[];
+}
+
+export interface DocumentSampleDetail extends DocumentSampleItem {
+  extractedText: string;
+}
+
+export interface NeighbourScore {
+  label: string;
+  similarity: number;
+}
+
+export interface FileClassificationResult {
+  label: string;
+  method: 'Rule' | 'Similarity';
+  neighbours: NeighbourScore[] | null;
+}
+
 export interface FileEntry {
   option: DocumentOption;
   file: File | null;
+  /** Set by auto-classify; how the classifier picked this file's slot, and its nearest-neighbour ranking when applicable. */
+  classification?: FileClassificationResult;
 }
 
 export function getFileStatus(entry: FileEntry): FileStatus {

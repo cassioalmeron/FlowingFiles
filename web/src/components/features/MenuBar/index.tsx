@@ -1,13 +1,9 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { FolderIcon, GearIcon, MailIcon } from '../../icons';
+import { FolderIcon, GearIcon, ImportIcon, LayersIcon, MailIcon } from '../../icons';
 import './styles.css';
 
-interface MenuBarProps {
-  onExportZip?: () => void;
-}
-
-const MenuBar: React.FC<MenuBarProps> = ({ onExportZip }) => {
+const MenuBar: React.FC = () => {
   return (
     <div className="menubar">
       <div className="menubar__brand">
@@ -15,11 +11,12 @@ const MenuBar: React.FC<MenuBarProps> = ({ onExportZip }) => {
         <span className="menubar__title">FlowingFiles</span>
       </div>
       <div className="menubar__actions">
-        {onExportZip && (
-          <button className="menubar__btn" onClick={onExportZip}>
-            Export ZIP
-          </button>
-        )}
+        <Link to="/settings/samples" className="menubar__btn" aria-label="Training Samples">
+          <LayersIcon size={16} />
+        </Link>
+        <Link to="/settings/batch-ingest" className="menubar__btn" aria-label="Batch Ingest">
+          <ImportIcon size={16} />
+        </Link>
         <Link to="/settings/emails" className="menubar__btn" aria-label="Email Registration">
           <MailIcon size={16} />
         </Link>

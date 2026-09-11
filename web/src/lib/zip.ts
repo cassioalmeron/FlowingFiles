@@ -1,5 +1,5 @@
 import JSZip from 'jszip';
-import type { FileEntry } from '../types';
+import type { DocumentOption, FileEntry } from '../types';
 
 const METADATA_ENTRIES = ['.DS_Store', 'Thumbs.db'];
 
@@ -67,6 +67,38 @@ function isMetadata(path: string): boolean {
 /** Normalises a `DocumentOption.path` so it can be compared against `ZipImportEntry.key`. */
 export function documentPathKey(path: string): string {
   return normalizePath(path);
+}
+
+export interface MatchResult {
+  /** One archive entry per matched `DocumentOption.id`. Each entry is used by at most one option. */
+  matchesByOptionId: Map<number, ZipImportEntry>;
+  /** Entries that matched no option's path — reported to the user, never silently dropped. */
+  unmatched: ZipImportEntry[];
+}
+
+/**
+ * Matches parsed archive entries against a set of document options by path, exact first then
+ * case-insensitive. Shared by the interactive ZIP import (one archive, `useDocumentManager`) and the
+ * batch backfill page (many archives) so there is exactly one implementation of this matching rule.
+ */
+export function matchEntriesToOptions(entries: ZipImportEntry[], options: DocumentOption[]): MatchResult {
+  const used = new Set<string>();
+  const matchesByOptionId = new Map<number, ZipImportEntry>();
+
+  for (const option of options) {
+    const key = documentPathKey(option.path);
+    const entry =
+      entries.find((e) => !used.has(e.path) && e.key === key) ??
+      entries.find((e) => !used.has(e.path) && e.key.toLowerCase() === key.toLowerCase());
+
+    if (entry) {
+      used.add(entry.path);
+      matchesByOptionId.set(option.id, entry);
+    }
+  }
+
+  const unmatched = entries.filter((e) => !used.has(e.path));
+  return { matchesByOptionId, unmatched };
 }
 
 export async function generateZip(files: FileEntry[], monthAbbrev: string): Promise<Blob> {
