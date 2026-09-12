@@ -1,3 +1,4 @@
+using FlowingFiles.Api;
 using FlowingFiles.Api.Middleware;
 using FlowingFiles.Core;
 using FlowingFiles.Core.Services;
@@ -32,7 +33,14 @@ Log.Information("Starting the application...");
 
 var builder = WebApplication.CreateBuilder(args);
 
-builder.Host.UseSerilog(Log.Logger);
+// The host logger forwards to the file logger above; writeToProviders keeps the ILogger output
+// flowing to the other providers too - without it the OpenTelemetry log exporter never sees anything.
+builder.Host.UseSerilog(
+    (context, configuration) => configuration.WriteTo.Logger(Log.Logger),
+    preserveStaticLogger: true,
+    writeToProviders: true);
+
+builder.AddApiTelemetry();
 
 builder.Services.AddCors(options =>
 {

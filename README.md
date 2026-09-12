@@ -1,43 +1,82 @@
 # FlowingFiles
 
-An application for organizing and managing monthly accounting and fiscal documents for Brazilian businesses. It streamlines the process of collecting required files and exporting them in a structured folder hierarchy for accountants and tax filing.
+An application for organizing and managing monthly accounting and fiscal documents for Brazilian businesses. It streamlines collecting the required files, auto-detecting/classifying them by content, exporting them in a structured ZIP, and emailing the result to the accountant.
 
-Available as a **Windows desktop app** (WPF) and a **web app** (React).
+Available as a **web app** (React + .NET API, PostgreSQL) and a legacy **Windows desktop app** (WPF).
 
 ## Features
 
-- **Document Checklist** — Predefined list of required and optional documents across categories:
-  - **Accounting (Contabil):** Payroll, payment receipts (DARF INSS, CSLL, IRPJ, E-Cont, New Office)
-  - **Fiscal:** NFSe (issued service invoices), purchased service notes (XML and PDF)
-  - **Banking:** Account statements and OFX transaction files
-- **Visual Status Indicators** — Color-coded borders show document status at a glance:
-  - Green = file attached
-  - Red = required file missing
-  - Orange = optional file missing
-- **File Preview** — Preview selected documents (PDF, images, XML, OFX)
-- **Export as ZIP** — Download all collected files as a structured ZIP archive
-- **Month Selector** — Choose the reference month; exports are named accordingly (e.g., `Jan`, `Feb`)
-- **Dark Theme** — DeepDark theme with steel-blue accents
+- **Document Checklist** — configurable list of required and optional documents across categories (Accounting, Fiscal, Banking)
+- **Auto-Classification** — uploaded PDFs/images are matched against a labelled sample corpus using text embeddings (Ollama) and cosine similarity, and placed into the correct slot automatically; XML invoices are classified by CNPJ
+- **Training Samples** — a page to build and curate the labelled corpus the classifier compares against (upload, view, delete, with confirmation)
+- **Batch Ingest** — backfill the corpus from several previously-exported monthly ZIPs at once
+- **File Preview** — preview selected documents (PDF, images, XML, OFX)
+- **Export / Import as ZIP** — download all collected files as a structured ZIP archive, or reload a previously exported archive back into the page
+- **Email Registration & Sending** — register recipient addresses and send the collected files by email (Gmail)
+- **Month Selector** — exports are named after the selected reference month (e.g., `Jan.zip`)
+- **Dark Theme**
 
 ---
 
-## Web App (React)
+## Web App
 
-A browser-based version that runs entirely on the client — no backend required. Files are held in memory and exported as a ZIP download.
+A React frontend backed by an ASP.NET Core API. Uploaded files, samples and configuration are persisted through the API; ZIP export/import still happens entirely in the browser.
 
 ### Requirements
 
 - [Node.js](https://nodejs.org/) 18+
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0)
+- PostgreSQL with the [pgvector](https://github.com/pgvector/pgvector) extension (or leave `DATABASE_URL` unset to fall back to a local SQLite file)
+- [Ollama](https://ollama.com/) running and reachable, with the `bge-m3` model pulled — used to embed document text for classification
+- `tesseract` CLI on `PATH` — used for OCR on image uploads
 
-### Getting Started
+### Environment Variables
+
+Copy `.env.example` to `.env` at the repository root and fill in the values. Used by both the API and Docker Compose:
+
+| Variable | Purpose |
+|---|---|
+| `DATABASE_URL` | PostgreSQL connection string. Empty → falls back to a local SQLite file |
+| `DB_PATH` | Optional SQLite file path, only used when `DATABASE_URL` is empty |
+| `GMAIL_USER` / `GMAIL_APP_PASSWORD` | Gmail account and app password used to send emails |
+| `OLLAMA_BASE_URL` / `OLLAMA_EMBEDDING_MODEL` | Override the embedding service location/model (defaults live in `server/FlowingFiles.Api/appsettings.json`) |
+| `OTEL_EXPORTER_OTLP_ENDPOINT` | Optional. When set, the API exports OpenTelemetry traces/metrics there; unset by default (no export) |
+| `ASPNETCORE_ENVIRONMENT` | ASP.NET Core hosting environment |
+| `APP_NAME`, `API_PORT`, `WEB_PORT` | Container names and published ports (Docker Compose) |
+| `VITE_APP_NAME`, `VITE_API_URL` | Build arguments for the web image (Docker Compose) |
+
+See `docs/documentation/environment-configuration.md` for full details.
+
+### Getting Started with Docker
 
 ```bash
-cd web
+docker compose up -d --build
+```
+
+This builds and runs the `api` and `web` containers. Ollama and PostgreSQL are **not** included in
+`docker-compose.yml` — they must already be running and reachable from the containers.
+
+### Getting Started without Docker
+
+```bash
+# Backend (from server/FlowingFiles.Api) — applies pending EF Core migrations automatically on startup
+dotnet run --project FlowingFiles.Api
+
+# Frontend (from web/), in another terminal
 npm install
 npm run dev
 ```
 
 Open `http://localhost:5173` in your browser.
+
+### Available Scripts (`web/`)
+
+| Script | Description |
+|---|---|
+| `npm run dev` | Start the Vite dev server |
+| `npm run build` | Type-check (`tsc -b`) and build for production |
+| `npm run lint` | Run ESLint |
+| `npm run preview` | Preview a production build locally |
 
 ### Build for Production
 
@@ -46,46 +85,66 @@ cd web
 npm run build
 ```
 
-The output is in `web/dist/` and can be served from any static hosting.
+The output is in `web/dist/`, served by the `web` container (`nginx`) or any static host — it expects the API to be reachable at `VITE_API_URL`.
+
+### Observability (optional)
+
+The API is instrumented with OpenTelemetry (ASP.NET Core, HttpClient and EF Core tracing/metrics), but doesn't export anywhere until `OTEL_EXPORTER_OTLP_ENDPOINT` is set. To view traces locally:
+
+```powershell
+./scripts/otel-dashboard.ps1
+```
+
+This starts a local Aspire Dashboard container at `http://localhost:18888` and prints the OTLP endpoint to set. Run with `-Remove` to tear it down. Windows PowerShell only.
+
+### Running Tests
+
+```bash
+cd server
+dotnet test FlowingFiles.Tests/FlowingFiles.Tests.csproj
+```
 
 ### Tech Stack
 
-- **React 18** with **TypeScript**
-- **Vite** as build tool
-- **CSS Modules** with CSS custom properties (DeepDark theme)
-- **JSZip** for client-side ZIP generation
-- **file-saver** for triggering downloads
+- **Frontend:** React 19, TypeScript, Vite, React Router, react-toastify, JSZip, file-saver
+- **Backend:** .NET 8 / ASP.NET Core, Entity Framework Core 8
+- **Database:** PostgreSQL + pgvector (production), SQLite (local fallback)
+- **Classification:** Ollama (`bge-m3` embeddings), pgvector cosine similarity, Tesseract OCR
+- **Email:** MailKit (Gmail SMTP)
+- **Observability:** Serilog (file sink), OpenTelemetry (tracing/metrics, optional OTLP export)
 
 ### Project Structure
 
 ```
+server/
+├── FlowingFiles.Api/       # Controllers, Program.cs, appsettings, Dockerfile
+├── FlowingFiles.Core/      # DbContext, Models, EF Configurations, Migrations, Services, Dtos
+├── FlowingFiles.Console/   # Scratch console project for manual prototyping
+└── FlowingFiles.Tests/     # Unit tests (MSTest)
 web/src/
 ├── components/
-│   ├── icons.tsx                       # SVG icon components
-│   └── features/
-│       ├── MenuBar/                    # Top bar with brand and export action
-│       ├── FileList/                   # Scrollable document list
-│       ├── FileListItem/              # Individual document row with status
-│       ├── FilePreview/               # Right panel (PDF, image, text preview)
-│       └── Toolbar/                   # Bottom bar with month selector and export
-├── hooks/
-│   └── useDocumentManager.ts          # Core state: files, selection, ZIP export
-├── data/
-│   └── documentOptions.ts            # 22 document definitions (from WPF app)
-├── types/
-│   └── index.ts                       # FileStatus, DocumentOption, FileEntry
-├── styles/
-│   ├── variables.css                  # DeepDark theme CSS custom properties
-│   └── globals.css                    # Reset and base styles
-├── App.tsx                            # Main two-column layout
-└── main.tsx                           # Entry point
+│   ├── icons.tsx                      # SVG icon components
+│   ├── layout/AppLayout/              # Shared page chrome
+│   └── features/                      # Components shared by 2+ pages
+├── pages/
+│   ├── Upload/                        # Main working page — attach files, classify, export
+│   ├── FilesConfiguration/            # CRUD for the document checklist
+│   ├── EmailRegistration/             # Manage recipient addresses
+│   ├── SamplesManagement/             # Curate the classifier's training corpus
+│   └── BatchIngest/                   # Backfill the corpus from exported ZIPs
+├── hooks/useDocumentManager.ts        # Core state: files, selection, ZIP export/import, sample ingestion
+├── lib/                                # zip.ts (ZIP generation/parsing), api.ts (API_URL)
+├── types/                              # Shared TypeScript types
+└── App.tsx                            # Routes
 ```
+
+See `docs/documentation/index.md` for per-feature technical docs and `docs/plans/` for the implementation plans behind each major feature.
 
 ---
 
-## Desktop App (WPF)
+## Desktop App (WPF) — Legacy
 
-The original Windows desktop application with native file dialogs and folder export.
+The original Windows desktop application with native file dialogs and folder export. Superseded by the web app; kept buildable but not actively developed.
 
 ### Requirements
 
