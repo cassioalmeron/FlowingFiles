@@ -64,10 +64,12 @@ builder.Services.AddSwaggerGen();
 
 builder.Services.AddInfrastructuralServices();
 
-// appsettings.json supplies the defaults (Threshold, K have no env var equivalent); BaseUrl and
-// EmbeddingModel are then overridden from OLLAMA_BASE_URL / OLLAMA_EMBEDDING_MODEL when set — flat
-// names read directly, matching how DatabaseSettings/GmailService read env vars in this project
+// appsettings.json supplies the defaults, all four overridable from the environment — flat names
+// read directly, matching how DatabaseSettings/GmailService read env vars in this project
 // (Environment.GetEnvironmentVariable, not the Section__Key convention IConfiguration expects).
+// appsettings.json itself is git-ignored (server/.gitignore), so Threshold/K must not depend on it
+// alone: a server whose file predates these keys would silently bind K to 0, turning the
+// similarity search's LIMIT into LIMIT 0 with no error.
 builder.Services.Configure<OllamaSettings>(builder.Configuration.GetSection("Ollama"));
 builder.Services.PostConfigure<OllamaSettings>(settings =>
 {
@@ -78,6 +80,14 @@ builder.Services.PostConfigure<OllamaSettings>(settings =>
     var embeddingModel = Environment.GetEnvironmentVariable("OLLAMA_EMBEDDING_MODEL");
     if (!string.IsNullOrEmpty(embeddingModel))
         settings.EmbeddingModel = embeddingModel;
+
+    var threshold = Environment.GetEnvironmentVariable("OLLAMA_THRESHOLD");
+    if (double.TryParse(threshold, out var parsedThreshold))
+        settings.Threshold = parsedThreshold;
+
+    var k = Environment.GetEnvironmentVariable("OLLAMA_K");
+    if (int.TryParse(k, out var parsedK))
+        settings.K = parsedK;
 });
 
 // Registered after AddInfrastructuralServices() so this typed-client registration wins over that
