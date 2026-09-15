@@ -26,7 +26,7 @@ public class FileClassifierService(
                 ".pdf" => await ClassifyPdfAsync(filePath),
                 ".jpg" or ".jpeg" or ".png" => await ClassifyImageAsync(filePath),
                 ".xml" => new FileClassification(ClassifyXml(filePath), ClassificationMethod.Rule, null),
-                _ => new FileClassification("Unknown", ClassificationMethod.Rule, null)
+                _ => UnsupportedExtension(filePath, extension)
             };
         }
         catch (Exception ex)
@@ -63,6 +63,12 @@ public class FileClassifierService(
         logger.LogInformation(
             "Similarity classification for {FileName}: label={Label} confidence={Confidence:F3} neighbours=[{Neighbours}]",
             Path.GetFileName(filePath), result.Label, result.Confidence, neighbours);
+    }
+
+    private FileClassification UnsupportedExtension(string filePath, string extension)
+    {
+        logger.LogWarning("Unsupported file extension: {FileName} ({Extension})", Path.GetFileName(filePath), extension);
+        return new FileClassification("Unknown", ClassificationMethod.Rule, null);
     }
 
     private string ClassifyXml(string filePath)

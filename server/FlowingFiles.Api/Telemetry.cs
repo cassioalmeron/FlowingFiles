@@ -1,4 +1,5 @@
 using OpenTelemetry;
+using OpenTelemetry.Logs;
 using OpenTelemetry.Metrics;
 using OpenTelemetry.Resources;
 using OpenTelemetry.Trace;
@@ -21,7 +22,16 @@ internal static class Telemetry
                 .AddEntityFrameworkCoreInstrumentation())
             .WithMetrics(metrics => metrics
                 .AddAspNetCoreInstrumentation()
-                .AddHttpClientInstrumentation());
+                .AddHttpClientInstrumentation())
+            // ParseStateValues/IncludeFormattedMessage default to false: without them the OTLP log
+            // exporter sends the raw message template ("Similarity classification for {FileName}...")
+            // instead of the value substituted into it, which is all a viewer like the Aspire
+            // Dashboard can render.
+            .WithLogging(configureBuilder: null, configureOptions: (OpenTelemetryLoggerOptions options) =>
+            {
+                options.ParseStateValues = true;
+                options.IncludeFormattedMessage = true;
+            });
 
         // Without a configured endpoint there is no exporter: avoids the endless OTLP retry
         // when the dashboard is not running.
